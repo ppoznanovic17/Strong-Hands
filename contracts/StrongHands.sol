@@ -15,6 +15,7 @@ contract StrongHands{
     
      mapping(address => Deposit) public deposits;
      address[] private users;
+     mapping(address => bool) hasDeposit; 
      
      constructor () {
          name = "Strong Hands";
@@ -22,9 +23,11 @@ contract StrongHands{
      }
      
     function deposit() payable public {
-        
+
         Deposit storage deposit = deposits[msg.sender];
-        users.push(payable(msg.sender));
+        if(!hasDeposit[msg.sender]) {
+            users.push(msg.sender);
+        }
         if(deposit.userBalance == 0){
             deposit.time = block.timestamp;
             deposit.userBalance = msg.value;
@@ -41,7 +44,7 @@ contract StrongHands{
         uint time = block.timestamp;
         Deposit storage deposit = deposits[msg.sender];
         // ako je balans korisnika koji je pozvao ovu funkciju jednak nuli, zaustavlja se izvrsavanje
-        require(deposit.userBalance != 0);
+        require(hasDeposit[msg.sender] == true);
         // vreme potrebno da se pare izvuku bez penala je 25 minuta (ta vrednost je stavljena radi lakseg testiranja)
         if(time - deposit.time > 25 minutes){
             //salju se pare korisniku i edituje se njegov Deposit
@@ -70,6 +73,7 @@ contract StrongHands{
             deposit.userBalance = 0;
             deposit.time = 0;
         }
+        hasDeposit[msg.sender] = true;
     }
     
     
