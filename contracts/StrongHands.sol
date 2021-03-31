@@ -37,27 +37,35 @@ contract StrongHands{
     
     
     function withdraw() external{
-        
+        // belezim trenutno vreme
         uint time = block.timestamp;
         Deposit storage deposit = deposits[msg.sender];
+        // ako je balans korisnika koji je pozvao ovu funkciju jednak nuli, zaustavlja se izvrsavanje
         require(deposit.userBalance != 0);
+        // vreme potrebno da se pare izvuku bez penala je 25 minuta (ta vrednost je stavljena radi lakseg testiranja)
         if(time - deposit.time > 25 minutes){
+            //salju se pare korisniku i edituje se njegov Deposit
             payable(msg.sender).transfer(deposit.userBalance + deposit.bonus);
             deposit.bonus = 0;
             deposit.userBalance = 0;
             deposit.time = 0;
         }else{
+            //racunam razliku u dizanju i ostavljanju para na deposit (u minutima)
             uint timeDiff = (time - deposit.time) / 60;
+            // racunam procenat vrednosti od ukupne vrednosti koju korisnik dize
             uint reducedPercent = 100 - 50 + timeDiff * 25;
+            // racunam vrednost koju korisnik dize
             uint withdrawValue = (reducedPercent* deposit.userBalance + deposit.bonus) / 100;
+            // racunam vrednost penala koji se placa
             uint reducedValue = (100 - reducedPercent) * deposit.userBalance / 100;
             payable(msg.sender).transfer(withdrawValue);
             for(uint40 i = 0; i < users.length; i++){
                 if(deposits[users[i]].userBalance != 0){
+                    // racunam koliko koji korisnik dobija bonusa
                     deposits[users[i]].bonus = (reducedValue * (deposits[users[i]].userBalance + deposits[users[i]].bonus)) / (address(this).balance - reducedValue);
                 }
             }
-           
+            // korisniku koji je podigao pare restartujem vrednosti
             deposit.bonus = 0;
             deposit.userBalance = 0;
             deposit.time = 0;
